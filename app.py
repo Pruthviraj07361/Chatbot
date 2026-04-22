@@ -1,22 +1,19 @@
+import os
 from flask import Flask, render_template, request, jsonify
 import json
-import random
 import requests
-import os
-from model import predict_intent
-from google import genai
+import google.generativeai as genai
 
 # 🔐 Load API keys
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 
-# 🤖 Gemini setup
-client = genai.Client(api_key=GEMINI_API_KEY)
-model_name = "gemini-2.5-flash"
+# 🤖 Configure Gemini
+genai.configure(api_key=GEMINI_API_KEY)
 
 app = Flask(__name__)
 
-# 📂 Load intents
+# 📂 Load intents (optional if used)
 with open("intents.json") as file:
     intents = json.load(file)
 
@@ -24,49 +21,55 @@ with open("intents.json") as file:
 # 🤖 Gemini response
 def get_ai_response(user_input):
     try:
-        response = client.models.generate_content(
-            model=model_name,
-            contents=user_input
-        )
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        response = model.generate_content(user_input)
         return response.text
     except Exception as e:
-        print("ERROR:", e)
+        print("Gemini Error:", e)
         return "⚠️ AI not available right now."
 
 
 # 🌦 WEATHER FUNCTION
 def get_weather(city):
-    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API_KEY}&units=metric"
-    res = requests.get(url).json()
+    try:
+        url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API_KEY}&units=metric"
+        res = requests.get(url).json()
 
-    return f"{city}: {res['main']['temp']}°C, {res['weather'][0]['description']}"
+        return f"{city}: {res['main']['temp']}°C, {res['weather'][0]['description']}"
+    except:
+        return "⚠️ Unable to fetch weather."
 
 
 # 💱 CURRENCY FUNCTION
 def get_currency(amount, from_curr, to_curr):
-    url = f"https://api.exchangerate-api.com/v4/latest/{from_curr}"
-    data = requests.get(url).json()
+    try:
+        url = f"https://api.exchangerate-api.com/v4/latest/{from_curr}"
+        data = requests.get(url).json()
 
-    rate = data["rates"].get(to_curr)
+        rate = data["rates"].get(to_curr)
 
-    if not rate:
-        return "Invalid currency"
+        if not rate:
+            return "Invalid currency"
 
-    result = amount * rate
-    return f"{amount} {from_curr} = {round(result,2)} {to_curr}"
+        result = amount * rate
+        return f"{amount} {from_curr} = {round(result, 2)} {to_curr}"
+    except:
+        return "⚠️ Currency service error."
 
 
 # 🧠 MAIN CHATBOT LOGIC
 def get_response(user_input):
     text = user_input.lower().strip()
 
+    # 🌦 Weather
     if "weather" in text:
         words = text.split()
         if "in" in words:
             city = words[words.index("in") + 1]
             return get_weather(city)
-        return "Tell me like: weather in Ahmedabad"
+        return "Use: weather in Ahmedabad"
 
+    # 💱 Currency
     if "convert" in text:
         try:
             words = text.split()
@@ -75,14 +78,16 @@ def get_response(user_input):
             to_curr = words[4].upper()
             return get_currency(amount, from_curr, to_curr)
         except:
-            return "Use format: convert 100 USD to INR"
+            return "Use: convert 100 USD to INR"
 
+    # Basic replies
     if any(word in text for word in ["hi", "hello"]):
         return "Hello! I am your AI assistant 🤖"
 
     if "bye" in text:
         return "Goodbye! 👋"
 
+    # 🤖 Gemini fallback
     return get_ai_response(user_input)
 
 
@@ -100,21 +105,24 @@ def chat():
     return jsonify({"response": response})
 
 
-# 🌦 WEATHER API
+# 🌦 Weather API
 @app.route("/weather")
 def weather():
     city = request.args.get("city")
 
-    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API_KEY}&units=metric"
-    data = requests.get(url).json()
+    try:
+        url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API_KEY}&units=metric"
+        data = requests.get(url).json()
 
-    return jsonify({
-        "temp": data["main"]["temp"],
-        "description": data["weather"][0]["description"]
-    })
+        return jsonify({
+            "temp": data["main"]["temp"],
+            "description": data["weather"][0]["description"]
+        })
+    except:
+        return jsonify({"error": "Weather error"})
 
 
-# 💱 CURRENCY API
+# 💱 Currency API
 @app.route("/currency")
 def currency():
     try:

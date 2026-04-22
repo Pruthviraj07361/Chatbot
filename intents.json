@@ -1,0 +1,43 @@
+{
+  "intents" : [
+    {
+      "tag": "greeting",
+      "patterns": ["hi", "hello", "hey"],
+      "responses": ["Hello! I am Pruthvi 🤖", "Hey! How can I help you?"]
+    },
+    {
+      "tag": "bye",
+      "patterns": ["bye", "goodbye"],
+      "responses": ["Goodbye! 👋"]
+    },
+    {
+      "tag": "pruthviskills",
+      "patterns": ["pruthviskills"],
+      "responses": [
+        "I know Python, Java, C, C++, SQL and I am learning Machine Learning,DSA"
+      ]
+    },
+    {
+      "tag": "git123",
+      "patterns": ["pruthvigithub","git123"],
+      "responses": [
+        "This is pruthvi github profile:-https://github.com/Pruthviraj07361"
+      ]
+    },
+    {
+      "tag": "linkden",
+      "patterns": ["link123","linkdenpruthvi"],
+      "responses": [
+        "This is pruthvi linkden profile:-https://www.linkedin.com/in/pruthviraj-kalsariya-2681233a9/"
+      ]
+    },
+    {
+      "tag":"Qulification",
+      "patterns": ["Qaulification12","what haveyou done"],
+      "responses": [
+        "Currently studying at the new ljit sem2,\n have done IIt bombay certified course by cohesion iit"
+      ]
+    }
+        
+  ]
+}

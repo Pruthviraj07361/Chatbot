@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Segoe UI',sans-serif;
+}
+
+body{
+    background: linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    color:white;
+}
+
+.container{
+    width:95%;
+    height:95vh;
+    display:grid;
+    grid-template-columns:1fr 2fr 1fr;
+    gap:15px;
+}
+
+.card{
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(10px);
+    border-radius:18px;
+    padding:15px;
+}
+
+/* LEFT */
+.left{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+}
+
+/* CENTER */
+.center{
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+}
+
+.chat-box{
+    height:250px;
+    overflow-y:auto;
+    margin:10px 0;
+}
+
+.chat-input{
+    display:flex;
+    gap:5px;
+}
+
+.chat-input input{
+    flex:1;
+    padding:8px;
+    border-radius:10px;
+    border:none;
+}
+
+/* RIGHT */
+.right{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+}
+
+input{
+    width:100%;
+    padding:8px;
+    border-radius:10px;
+    border:none;
+    margin-top:5px;
+}
+
+button{
+    margin-top:5px;
+    padding:8px;
+    border:none;
+    border-radius:10px;
+    background:#4facfe;
+    color:white;
+    cursor:pointer;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<!-- LEFT -->
+<div class="left">
+
+    <div class="card">
+        <h3>🌦 Weather Checker</h3>
+        <input id="cityInput" placeholder="Enter city">
+        <button onclick="getWeather()">Check</button>
+        <p id="weatherResult"></p>
+    </div>
+
+    <div class="card">
+        <h3>📍 Gujarat Live Temp</h3>
+        <p id="gujaratTemp">Loading...</p>
+    </div>
+
+</div>
+
+<!-- CENTER -->
+<div class="card center">
+
+    <h2>AI Dashboard 🤖</h2>
+    <p>Chat • Weather • Currency</p>
+
+    <div id="chat-box" class="chat-box"></div>
+
+    <div class="chat-input">
+        <input id="userInput" placeholder="Ask chatbot...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+</div>
+
+<!-- RIGHT -->
+<div class="right">
+
+    <div class="card">
+        <h3>📊 INR vs EUR</h3>
+        <canvas id="chart"></canvas>
+    </div>
+
+    <div class="card">
+        <h3>💱 Currency Converter</h3>
+        <input id="amount" placeholder="Amount">
+        <input id="from" placeholder="From (USD)">
+        <input id="to" placeholder="To (INR)">
+        <button onclick="convertCurrency()">Convert</button>
+        <p id="currencyResult"></p>
+    </div>
+
+</div>
+
+</div>
+
+<script>
+
+// CHATBOT
+function sendMessage() {
+    let input = document.getElementById("userInput").value;
+    let box = document.getElementById("chat-box");
+
+    box.innerHTML += `<div>You: ${input}</div>`;
+
+    fetch("/chat", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({message: input})
+    })
+    .then(res => res.json())
+    .then(data => {
+        box.innerHTML += `<div>AI: ${data.response}</div>`;
+    });
+
+    document.getElementById("userInput").value = "";
+}
+
+
+// WEATHER
+function getWeather() {
+    let city = document.getElementById("cityInput").value;
+
+    fetch(`/weather?city=${city}`)
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("weatherResult").innerText =
+            `${data.temp}°C | ${data.description}`;
+    });
+}
+
+
+// GUJARAT AUTO TEMP
+function loadGujaratTemp() {
+    fetch(`/weather?city=Ahmedabad`)
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("gujaratTemp").innerText =
+            `Ahmedabad: ${data.temp}°C`;
+    });
+}
+loadGujaratTemp();
+
+
+// CURRENCY
+function convertCurrency() {
+    let amount = document.getElementById("amount").value;
+    let from = document.getElementById("from").value;
+    let to = document.getElementById("to").value;
+
+    fetch(`/currency?amount=${amount}&from=${from}&to=${to}`)
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("currencyResult").innerText =
+            `${amount} ${from} = ${data.result} ${to}`;
+    });
+}
+
+
+// GRAPH (dummy for now, backend can improve later)
+const ctx = document.getElementById('chart');
+
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: ["Mon","Tue","Wed","Thu","Fri"],
+        datasets: [{
+            label: "INR vs EUR",
+            data: [88, 89, 87, 90, 89],
+            borderWidth: 2
+        }]
+    }
+});
+
+</script>
+
+</body>
+</html>
